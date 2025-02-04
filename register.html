@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registo - As Laras</title>
+  <link rel="icon" type="image/x-icon" href="logo1laras.png">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #222;
+      color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #333;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #f4f4f4;
+    }
+    input[type="text"], input[type="password"] {
+      width: calc(100% - 40px);
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #555;
+      border-radius: 4px;
+      font-size: 16px;
+      background-color: #444;
+      color: #f4f4f4;
+      box-sizing: border-box;
+    }
+    .password-container {
+      position: relative;
+      width: 100%;
+      display: inline-block;
+    }
+    .password-container input {
+      padding-right: 40px;
+    }
+    .password-container button {
+      position: absolute;
+      right: 7%;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: #f4f4f4;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      z-index: 1;
+    }
+    button {
+      background: #f4c542;
+      color: #222;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: block;
+      margin: 10px auto;
+    }
+    button:hover {
+      background: #e1b437;
+    }
+    .status {
+      color: #f4c542;
+      margin: 10px 0;
+    }
+    .switch {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+    .switch a {
+      color: #f4c542;
+      text-decoration: none;
+      font-weight: bold;
+      margin: 0 10px;
+    }
+    .switch a:hover {
+      text-decoration: underline;
+    }
+    .terms-container {
+      margin: 10px 0;
+      text-align: left;
+      display: flex;
+      align-items: flex-start;
+    }
+    .terms-container input[type="checkbox"] {
+      margin-right: 10px;
+    }
+    .terms-container label {
+      color: #f4f4f4;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .terms-container a {
+      color: #f4c542;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Registro</h2>
+    <form id="register-form">
+      <input type="text" id="register-username" placeholder="Nome de Usuário" required>
+      <input type="text" id="register-email" placeholder="Email" required>
+      <div class="password-container">
+        <input type="password" id="register-password" placeholder="Senha" required>
+        <button type="button" id="toggle-register-password">👁️</button>
+      </div>
+      <div class="password-container">
+        <input type="password" id="register-confirm-password" placeholder="Confirmar Senha" required>
+        <button type="button" id="toggle-confirm-password">👁️</button>
+      </div>
+      <div class="terms-container">
+        <input type="checkbox" id="accept-terms" required>
+        <label for="accept-terms">
+          Sou uma Lara e fui á festa da Grande Yasmin        </label>
+      </div>
+      <button type="submit">Registar</button>
+    </form>
+    <p class="status" id="status"></p>
+    <div class="switch">
+      <a href="login.html">Já tem uma conta? Faça login</a>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs e Lógica -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+  apiKey: "AIzaSyBJxt5VE1ygu0KUbzupf1HKTOYmCFZWbfA",
+  authDomain: "achapada-6ecee.firebaseapp.com",
+  projectId: "achapada-6ecee",
+  storageBucket: "achapada-6ecee.firebasestorage.app",
+  messagingSenderId: "278004408842",
+  appId: "1:278004408842:web:baaa29641af0a32a7ef5f3"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const username = document.getElementById('register-username').value.trim();
+      const email = document.getElementById('register-email').value.trim();
+      const password = document.getElementById('register-password').value;
+      const confirmPassword = document.getElementById('register-confirm-password').value;
+
+      if (password !== confirmPassword) {
+        document.getElementById('status').innerText = "As senhas não coincidem!";
+        return;
+      }
+      if (!document.getElementById('accept-terms').checked) {
+        document.getElementById('status').innerText = "Você deve aceitar os termos e condições!";
+        return;
+      }
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = userCredential.user.uid;
+        // Salva os dados do usuário no Firestore
+        await setDoc(doc(db, 'users', uid), {
+          username: username,
+          email: email,
+          createdAt: new Date()
+        });
+        window.location.href = 'login.html';
+      } catch (error) {
+        document.getElementById('status').innerText = `Erro: ${error.message}`;
+      }
+    });
+
+    document.getElementById('toggle-register-password').addEventListener('click', function() {
+      const passwordField = document.getElementById('register-password');
+      const type = passwordField.type === 'password' ? 'text' : 'password';
+      passwordField.type = type;
+      this.textContent = '👁️';
+    });
+    document.getElementById('toggle-confirm-password').addEventListener('click', function() {
+      const passwordField = document.getElementById('register-confirm-password');
+      const type = passwordField.type === 'password' ? 'text' : 'password';
+      passwordField.type = type;
+      this.textContent = '👁️';
+    });
+  </script>
+</body>
+</html>
