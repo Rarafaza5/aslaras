@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Perfil - As Laras</title>
+  <link rel="icon" type="image/x-icon" href="logo1laras.png">
+
+  <style>
+    :root {
+      --primary-color: #0a74da;
+      --primary-hover: #005c99;
+      --bg-light: #f4f4f9;
+      --bg-white: #ffffff;
+      --text-color: #333;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --border-radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-light);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+      color: #fff;
+      width: 100%;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    header h1 { font-size: 1.8em; margin-left: 20px; }
+    header .profile {
+      display: flex;
+      align-items: center;
+      margin-right: 20px;
+    }
+    header button {
+      background: var(--bg-white);
+      color: var(--primary-color);
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      padding: 20px;
+    }
+    .profile-info {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .profile-info h2 {
+      font-size: 1.8em;
+      margin-bottom: 5px;
+    }
+    .profile-info p {
+      font-size: 1em;
+      color: #777;
+    }
+    /* Botão de seguir */
+    #followBtn {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px auto;
+      display: block;
+      transition: background 0.3s ease;
+    }
+    #followBtn:hover {
+      background: var(--primary-hover);
+    }
+    /* Estilos dos posts (idênticos ao index.html) */
+    .posts-container {
+      width: 100%;
+      margin-top: 20px;
+    }
+    .post {
+      background: var(--bg-white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .post-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .post-header .mood-icon {
+      font-size: 2em;
+    }
+    .post-header .username {
+      font-weight: bold;
+      font-size: 1.2em;
+      color: var(--primary-hover);
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .post-header .timestamp {
+      font-size: 0.9em;
+      color: #777;
+    }
+    .post-content {
+      margin-top: 10px;
+      font-size: 1.1em;
+      color: #444;
+    }
+    .post-footer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .like-container, .comment-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .like-btn, .comment-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2em;
+      color: var(--primary-hover);
+    }
+    /* Seção de comentários */
+    .comments-section {
+      display: none;
+      margin-top: 10px;
+      border-top: 1px solid #ccc;
+      padding-top: 10px;
+    }
+    .comments-list {
+      margin-bottom: 10px;
+    }
+    .comment {
+      padding: 6px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .comment p { margin: 4px 0; }
+    .comment span {
+      font-size: 0.9em;
+      color: #777;
+    }
+    .comment-form input[type="text"] {
+      width: 80%;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .comment-form button {
+      padding: 6px 12px;
+      cursor: pointer;
+      border: none;
+      background: var(--primary-color);
+      color: #fff;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Perfil</h1>
+    <div class="profile">
+      <!-- Exibe o nickname (ou username) do usuário logado -->
+      <span id="header-profile-name">Carregando...</span>
+      <button id="signOutBtn">Sair</button>
+    </div>
+  </header>
+  <div class="container">
+    <div class="profile-info" id="profile-info">
+      <!-- Exibe o nickname do perfil exibido -->
+      <h2 id="profile-name">Carregando...</h2>
+      <!-- Botão de seguir; será exibido apenas se o perfil exibido for de outro usuário -->
+      <button id="followBtn" style="display:none;">Seguir</button>
+      <!-- Exibe o contador: seguidores, seguindo, posts e likes -->
+      <p id="followers-count">0 seguidores</p>
+    </div>
+    <div class="posts-container" id="posts-container">
+      <!-- Posts do usuário serão carregados aqui -->
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+    import {
+      getFirestore, doc, getDoc, collection, query, where, orderBy, getDocs,
+      addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove
+    } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBJxt5VE1ygu0KUbzupf1HKTOYmCFZWbfA",
+      authDomain: "achapada-6ecee.firebaseapp.com",
+      projectId: "achapada-6ecee",
+      storageBucket: "achapada-6ecee.firebasestorage.app",
+      messagingSenderId: "278004408842",
+      appId: "1:278004408842:web:baaa29641af0a32a7ef5f3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let loggedProfile = {}; // Perfil do usuário logado
+    let profileDataDisplayed = {}; // Perfil do usuário exibido (pode ser de outro usuário)
+    let profileFollowers = 0; // Número de seguidores do perfil exibido
+    let profileFollowing = 0; // Número de pessoas que o perfil exibido segue
+
+    // Recupera parâmetros da URL (ex: uid do perfil a ser exibido)
+    function getQueryParam(param) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(param);
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // Carrega o perfil do usuário logado
+        const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+        loggedProfile = userDocSnap.exists() ? userDocSnap.data() : {};
+        
+        // Exibe o nickname (ou username) do usuário logado no cabeçalho
+        document.getElementById('header-profile-name').textContent = loggedProfile.nickname || loggedProfile.username || 'Usuário';
+        
+        // Determina qual perfil será exibido (pode ser o próprio ou de outro usuário)
+        const profileUid = getQueryParam('uid') || user.uid;
+        profileDataDisplayed = await loadUserProfile(profileUid);
+        loadUserPosts(profileUid);
+        configureFollowButton(profileUid, profileDataDisplayed);
+      } else {
+        window.location.href = 'login.html';
+      }
+    });
+
+    document.getElementById('signOutBtn').addEventListener('click', async () => {
+      await signOut(auth);
+      window.location.href = 'login.html';
+    });
+
+    // Carrega os dados do perfil exibido (nickname, seguidores e seguindo)
+    async function loadUserProfile(uid) {
+      const userDocRef = doc(db, 'users', uid);
+      const userDocSnap = await getDoc(userDocRef);
+      let profileData = userDocSnap.exists() ? userDocSnap.data() : {};
+      const displayName = profileData.nickname || profileData.username || 'Usuário desconhecido';
+      document.getElementById('profile-name').textContent = displayName;
+      const followersCount = profileData.followers ? profileData.followers.length : 0;
+      profileFollowers = followersCount;
+      const followingCount = profileData.following ? profileData.following.length : 0;
+      profileFollowing = followingCount;
+      document.getElementById('followers-count').textContent = `${profileFollowers} seguidores | ${profileFollowing} seguindo`;
+      return profileData;
+    }
+
+    // Configura o botão de seguir (apenas se o perfil exibido for de outro usuário)
+    function configureFollowButton(profileUid, profileData) {
+      const followBtn = document.getElementById('followBtn');
+      // Se for o próprio perfil, oculta o botão
+      if (profileUid === auth.currentUser.uid) {
+        followBtn.style.display = 'none';
+      } else {
+        followBtn.style.display = 'block';
+        // Verifica se o usuário logado já segue o perfil exibido
+        const isFollowing = profileData.followers && profileData.followers.includes(auth.currentUser.uid);
+        followBtn.textContent = isFollowing ? 'Deixar de seguir' : 'Seguir';
+        followBtn.onclick = async () => {
+          try {
+            const userRef = doc(db, 'users', profileUid);
+            let updatedFollowers = profileData.followers || [];
+            if (isFollowing) {
+              // Remover o uid do seguidor
+              updatedFollowers = updatedFollowers.filter(uid => uid !== auth.currentUser.uid);
+            } else {
+              // Adicionar o uid do seguidor
+              updatedFollowers.push(auth.currentUser.uid);
+            }
+            await updateDoc(userRef, { followers: updatedFollowers });
+            // Após atualizar, recarrega a página automaticamente
+            location.reload();
+          } catch (error) {
+            console.error('Erro ao atualizar seguidores:', error);
+          }
+        };
+      }
+    }
+
+    // Carrega os posts do perfil exibido com o mesmo estilo do index.html e acumula estatísticas
+    async function loadUserPosts(uid) {
+      const postsContainer = document.getElementById('posts-container');
+      const postsQuery = query(
+        collection(db, 'posts'),
+        where('uid', '==', uid),
+        orderBy('timestamp', 'desc')
+      );
+      
+      try {
+        const querySnapshot = await getDocs(postsQuery);
+        postsContainer.innerHTML = '';
+        let postsCount = 0;
+        let totalLikes = 0;
+        
+        if (querySnapshot.empty) {
+          postsContainer.innerHTML = '<p>Este usuário ainda não fez nenhum post.</p>';
+        } else {
+          querySnapshot.forEach((docSnap) => {
+            postsCount++;
+            const post = docSnap.data();
+            totalLikes += Object.keys(post.likes || {}).length;
+            const postId = docSnap.id;
+            let moodIcon = '';
+            switch (post.mood) {
+              case 'happy': moodIcon = '😊'; break;
+              case 'sad': moodIcon = '😢'; break;
+              case 'angry': moodIcon = '😡'; break;
+              case 'excited': moodIcon = '🤩'; break;
+              default: moodIcon = '😊';
+            }
+            // Likes
+            const likes = post.likes || {};
+            const likeCount = Object.keys(likes).length;
+            const userLiked = likes[auth.currentUser.uid] ? true : false;
+            const heartIcon = userLiked ? '❤️' : '🤍';
+
+            // Cria o elemento do post (sem alterar o CSS)
+            const postElement = document.createElement('div');
+            postElement.classList.add('post');
+            postElement.setAttribute('data-post-id', postId);
+
+            postElement.innerHTML = `
+              <div class="post-header">
+                <div class="mood-icon">${moodIcon}</div>
+                <div>
+                  <span class="username">${post.username}</span><br>
+                  <span class="timestamp">${post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleString() : 'Carregando...'}</span>
+                </div>
+                <div class="like-container" style="margin-left: auto; display: flex; align-items: center; gap: 4px;">
+                  <button class="like-btn" data-post-id="${postId}" data-liked="${userLiked}">
+                    ${heartIcon}
+                  </button>
+                  <span class="like-count">${likeCount}</span>
+                </div>
+              </div>
+              <p class="post-content">${post.content}</p>
+              <div class="post-footer">
+                <div class="comment-container">
+                  <button class="comment-btn" data-post-id="${postId}">
+                    💬
+                  </button>
+                </div>
+              </div>
+              <div class="comments-section" data-post-id="${postId}">
+                <div class="comments-list"></div>
+                <form class="comment-form" data-post-id="${postId}">
+                  <input type="text" placeholder="Escreva um comentário..." required />
+                  <button type="submit">Enviar</button>
+                </form>
+              </div>
+            `;
+            postsContainer.appendChild(postElement);
+          });
+        }
+        // Atualiza a exibição do contador com os quatro dados: seguidores, seguindo, posts e likes
+        document.getElementById('followers-count').textContent = `${profileFollowers} seguidores | ${profileFollowing} seguindo | ${postsCount} posts | ${totalLikes} likes`;
+        
+        // Adiciona os eventos para os botões de like, comentário e envio de comentários
+        document.querySelectorAll('.like-btn').forEach(button => {
+          button.addEventListener('click', handleLikeToggle);
+        });
+        document.querySelectorAll('.comment-btn').forEach(button => {
+          button.addEventListener('click', toggleCommentsSection);
+        });
+        document.querySelectorAll('.comment-form').forEach(form => {
+          form.addEventListener('submit', handleNewComment);
+        });
+      } catch (error) {
+        console.error("Erro ao buscar posts:", error);
+        postsContainer.innerHTML = '<p>Erro ao carregar os posts.</p>';
+      }
+    }
+
+    // Atualiza o like com feedback imediato na UI
+    async function handleLikeToggle(event) {
+      event.stopPropagation();
+      const button = event.currentTarget;
+      const postId = button.getAttribute('data-post-id');
+      const likeCountElement = button.nextElementSibling;
+      
+      let liked = button.getAttribute('data-liked') === 'true';
+      let likeCount = parseInt(likeCountElement.textContent, 10);
+      
+      if (!liked) {
+        button.textContent = '❤️';
+        likeCountElement.textContent = likeCount + 1;
+        button.setAttribute('data-liked', 'true');
+      } else {
+        button.textContent = '🤍';
+        likeCountElement.textContent = likeCount - 1;
+        button.setAttribute('data-liked', 'false');
+      }
+      
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      if (postDoc.exists()) {
+        const postData = postDoc.data();
+        let likes = postData.likes || {};
+        if (!liked) {
+          likes[auth.currentUser.uid] = true;
+        } else {
+          delete likes[auth.currentUser.uid];
+        }
+        await updateDoc(postRef, { likes });
+      }
+    }
+
+    // Alterna a exibição da seção de comentários
+    function toggleCommentsSection(event) {
+      const postId = event.currentTarget.getAttribute('data-post-id');
+      const commentsSection = document.querySelector(`.comments-section[data-post-id="${postId}"]`);
+      if (commentsSection.style.display === 'none' || commentsSection.style.display === '') {
+        commentsSection.style.display = 'block';
+        loadComments(postId);
+      } else {
+        commentsSection.style.display = 'none';
+      }
+    }
+
+    // Carrega os comentários de um post específico
+    async function loadComments(postId) {
+      const commentsList = document.querySelector(`.comments-section[data-post-id="${postId}"] .comments-list`);
+      const commentsQuerySnapshot = await getDocs(
+        query(collection(db, 'posts', postId, 'comments'), orderBy('timestamp', 'asc'))
+      );
+      let html = '';
+      commentsQuerySnapshot.forEach((docSnap) => {
+        const comment = docSnap.data();
+        html += `<div class="comment">
+          <strong>${comment.username}</strong>: 
+          <p>${comment.content}</p>
+          <span>${comment.timestamp ? new Date(comment.timestamp.seconds * 1000).toLocaleString() : 'Carregando...'}</span>
+        </div>`;
+      });
+      commentsList.innerHTML = html;
+    }
+
+    // Limita o envio de comentários a um a cada 10 segundos.
+    let lastCommentTimestamp = 0;
+    async function handleNewComment(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const postId = form.getAttribute('data-post-id');
+      const input = form.querySelector('input[type="text"]');
+      const content = input.value;
+
+      const now = Date.now();
+      if (now - lastCommentTimestamp < 10000) {
+        alert("Você só pode comentar uma vez a cada 10 segundos.");
+        return;
+      }
+      lastCommentTimestamp = now;
+      
+      // Usa o nickname (ou username) do usuário logado para exibir o comentário
+      await addDoc(collection(db, 'posts', postId, 'comments'), {
+        username: loggedProfile.nickname || loggedProfile.username || 'Usuário',
+        content,
+        timestamp: serverTimestamp()
+      });
+      
+      input.value = '';
+      const commentsSection = document.querySelector(`.comments-section[data-post-id="${postId}"]`);
+      commentsSection.style.display = 'block';
+      loadComments(postId);
+    }
+  </script>
+</body>
+</html>
